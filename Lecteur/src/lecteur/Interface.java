@@ -191,9 +191,11 @@ public class Interface extends javax.swing.JFrame {
             //System.out.println("STR = " + str);
             
             //Appel fonction split chaque ligne de la page.
-            //System.out.println("nb row avant = " + row.length);
             row = splitPage(str2);
             System.out.println("nb row après = " + row.length);
+            
+            //recherche de correspondance AA, AF, ect..
+            //Liste d'objets bilan
         }
         }catch(Exception err) {
             err.printStackTrace();
