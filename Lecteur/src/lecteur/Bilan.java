@@ -14,6 +14,10 @@ public class Bilan {
     private String nom;
     private int valeur;
 
+    public Bilan() {
+        
+    }
+    
     public Bilan(String nom) {
         this.nom = nom;
     }
@@ -55,6 +59,10 @@ public class Bilan {
      */
     public void setValeur(int valeur) {
         this.valeur = valeur;
+    }
+    
+    public void show(){
+        System.out.println("RUBRIQUE=" + this.getNom() + "##VALEUR=" + this.getValeur() + "##");
     }
     
 }
