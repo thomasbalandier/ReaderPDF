@@ -13,6 +13,9 @@ import com.itextpdf.text.pdf.PdfWriter;
 import com.itextpdf.text.pdf.parser.PdfTextExtractor;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
@@ -22,6 +25,22 @@ import javax.swing.filechooser.FileNameExtensionFilter;
  * @author tbalandier
  */
 public class Interface extends javax.swing.JFrame {
+
+    private static void veriftabbilan(ArrayList<Bilan> tab) {
+        //Verifier si la la 2nd rubrique est égale à la première
+        //Si c'est la cas, la deuxième = 0
+        Bilan bil1;
+        Bilan bil2;
+        
+        if(tab.size() == 2) {
+            bil1 = tab.get(0);
+            bil2 = tab.get(1);
+            
+            if(bil1.getValeur() == bil2.getValeur()) {
+                tab.get(1).setValeur(0);
+            }
+        }
+    }
 
     /**
      * Creates new form Interface
@@ -115,7 +134,6 @@ public class Interface extends javax.swing.JFrame {
 
     private void button_parcourirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_button_parcourirActionPerformed
         // TODO add your handling code here:
-        //System.out.println("TEST BOUTON");
         
         JFileChooser chooser = new JFileChooser();
         FileNameExtensionFilter filter = new FileNameExtensionFilter(
@@ -130,8 +148,6 @@ public class Interface extends javax.swing.JFrame {
 
             //test affichage
             this.doc.show();
-            
-            //System.out.println("TEXT = " + text);
         }
     }//GEN-LAST:event_button_parcourirActionPerformed
 
@@ -168,6 +184,8 @@ public class Interface extends javax.swing.JFrame {
     private static String ReadPDF(String pdf_url)
     {
         String[] row;
+        ArrayList<Bilan> tabRubriqueBilanTotal = new ArrayList<>();
+        ArrayList<Bilan> tabRubriqueBilan = null;
         System.out.println("ReadPDF");
 
         StringBuilder str=new StringBuilder();
@@ -175,15 +193,17 @@ public class Interface extends javax.swing.JFrame {
         try
         {
         PdfReader reader = new PdfReader(pdf_url);
-        int n = reader.getNumberOfPages();
-        System.out.println("Nombre de page = " + n);
-        
+        int nbpage = reader.getNumberOfPages();
+        System.out.println("Nombre de page = " + nbpage);
+        //Recherche page BILAN - ACTIF
+        //Recherche page BILAN - PASSIF
+        //Recherche page 
         //pour chaque page, lire ligne.
-        //for(int i=22;i<=25;i++) {
-        for(int i=1;i<=n;i++) {
+        for(int i=22;i<=22;i++) {
+        //for(int i=1;i<=nbpage;i++) {
             String str2=PdfTextExtractor.getTextFromPage(reader, i);
-            System.out.println("STR2 = " + str2);
-            System.out.println("===========================");
+            //System.out.println("STR2 = " + str2);
+            //System.out.println("===========================");
             
             row = null;
             //Concatener les pages :
@@ -192,11 +212,32 @@ public class Interface extends javax.swing.JFrame {
             
             //Appel fonction split chaque ligne de la page.
             row = splitPage(str2);
-            System.out.println("nb row après = " + row.length);
+            System.out.println();
+            System.out.println("\nnb row à traiter = " + row.length);
             
             //recherche de correspondance AA, AF, ect..
-            //Liste d'objets bilan
+            //Recherche deux majuscules suivis d'espaces et nombre/espace/nombre
+            //TODO
+            //Gerer les cas où il n'y a pas de chiffre
+            String pattern1 = "[A-Z]{2}";
+            String pattern = "[A-Z]{2}\\p{Space}+\\d+\\p{Space}?\\d+";
+            for (int j = 0; j < row.length; j++) {
+                System.out.println("\nLigne à traiter AVANT FCT: " + row[j]);
+                //TAB_BILAN par ligne
+                tabRubriqueBilan = recherchebilan(row[j], pattern);
+                for (int k = 0; k < tabRubriqueBilan.size(); k++) {
+                    tabRubriqueBilanTotal.add(tabRubriqueBilan.get(k));
+                }
+            }
+            
+            for (int j = 0; j < tabRubriqueBilanTotal.size(); j++) {
+                tabRubriqueBilanTotal.get(j).show();
+            }
+            
+            System.out.println("TAILLE TAB PAR PAGE = " + tabRubriqueBilanTotal.size());       
         }
+        afficheResultat(tabRubriqueBilanTotal);
+        
         }catch(Exception err) {
             err.printStackTrace();
         }
@@ -205,11 +246,87 @@ public class Interface extends javax.swing.JFrame {
     
     //stock chaque ligne dans un tableau de str.
     private static String[] splitPage(String page) {
-        String[] row = null;
+        String[] row = null;        
         
-        row = page.split("(?m)^.*$");
+        row = page.split("(?m)\n");
+        //row = page.split("(?m)^.*$");
         
         return row;
+    }
+
+    private static ArrayList<Bilan> recherchebilan(String ligne, String pattern) {  
+        
+        ArrayList<Bilan> tab = new ArrayList<>();
+        Bilan bil;
+        String resultat;
+        String rubrique;
+        Integer valeur;
+        
+        Pattern p = Pattern.compile(pattern);
+        Matcher m = p.matcher(ligne);
+        
+        while (m.find()) {                    
+            //System.out.println("MATCH");
+            //Créatoin d'un nouveau bilan
+            bil = new Bilan();
+            resultat = ligne.substring(m.start(), m.end());
+            System.out.println(resultat);
+            
+            //Get rubrique du resultat
+            rubrique = getRubriqueRegex(resultat);
+            //Get valeur du resultat
+            valeur = getValeurRegex(resultat);
+
+            bil.setNom(rubrique);
+            bil.setValeur(valeur);
+
+            tab.add(bil);
+            
+            
+            //System.out.println("TAILLE TAB PAR LIGNE = " + tab.size());
+        }
+        veriftabbilan(tab);
+        
+        for (int i = 0; i < tab.size(); i++) {
+            tab.get(i).show();
+        }
+        
+        return tab;
+    }
+
+    private static Integer getValeurRegex(String resultat) {
+        Integer res;
+        String[] strsplit;
+        String str;
+        
+        strsplit = resultat.split("[a-zA-Z]+");
+        str = strsplit[1].replaceAll(" ", "");
+        res = Integer.parseInt(str);
+
+        return res;
+    }
+
+    private static String getRubriqueRegex(String resultat) {
+        String res = null;
+        String pattern;
+        
+        pattern = "[a-zA-Z]{2}";
+        
+        Pattern p = Pattern.compile(pattern);
+        Matcher m = p.matcher(resultat);
+
+        while (m.find()) {
+            res = (resultat.substring(m.start(), m.end()));
+        }
+        return res;
+    }
+
+    private static void afficheResultat(ArrayList<Bilan> tabRubriqueBilanTotal) {
+        
+        for (int i = 0; i < tabRubriqueBilanTotal.size(); i++) {
+            
+            
+        }
     }
 
     
