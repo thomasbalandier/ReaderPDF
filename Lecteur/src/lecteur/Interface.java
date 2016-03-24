@@ -5,15 +5,36 @@
  */
 package lecteur;
 
+import com.itextpdf.text.BaseColor;
 import com.itextpdf.text.Document;
 import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.Rectangle;
+import com.itextpdf.text.pdf.AcroFields;
+import com.itextpdf.text.pdf.PdfContentByte;
+import com.itextpdf.text.pdf.PdfDictionary;
+import com.itextpdf.text.pdf.PdfName;
 import com.itextpdf.text.pdf.PdfReader;
+import com.itextpdf.text.pdf.PdfRectangle;
+import com.itextpdf.text.pdf.PdfStamper;
 import com.itextpdf.text.pdf.PdfWriter;
+import com.itextpdf.text.pdf.parser.FilteredTextRenderListener;
+import com.itextpdf.text.pdf.parser.LocationTextExtractionStrategy;
+import com.itextpdf.text.pdf.parser.PdfReaderContentParser;
 import com.itextpdf.text.pdf.parser.PdfTextExtractor;
+import com.itextpdf.text.pdf.parser.RegionTextRenderFilter;
+import com.itextpdf.text.pdf.parser.RenderFilter;
+import com.itextpdf.text.pdf.parser.TextExtractionStrategy;
+import com.itextpdf.text.pdf.parser.TextMarginFinder;
+import com.itextpdf.text.pdf.parser.TextRenderInfo;
+import com.itextpdf.text.pdf.parser.Vector;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.swing.JFileChooser;
@@ -154,8 +175,12 @@ public class Interface extends javax.swing.JFrame {
     private void button_lireActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_button_lireActionPerformed
         // TODO add your handling code here:
         String text = "";
-        //this.doc.show();
-        text = ReadPDF(this.doc.getChemin());
+        try {
+            //this.doc.show();
+            text = ReadPDF(this.doc.getChemin());
+        } catch (IOException ex) {
+            Logger.getLogger(Interface.class.getName()).log(Level.SEVERE, null, ex);
+        }
 
         if(text.equals("")){
             this.lb_fichier.setText("Nom du fichier.");
@@ -181,8 +206,9 @@ public class Interface extends javax.swing.JFrame {
         document.close();
     }
     
-    private static String ReadPDF(String pdf_url)
+    private static String ReadPDF(String pdf_url) throws IOException
     {
+        
         String[] row;
         ArrayList<Bilan> tabRubriqueBilanTotal = new ArrayList<>();
         ArrayList<Bilan> tabRubriqueBilan = null;
@@ -192,17 +218,58 @@ public class Interface extends javax.swing.JFrame {
         
         try
         {
+        pdf_url = "C:\\Users\\Super_t0t0\\Documents\\GitHub\\ReaderPDF\\ressources\\sample-6.pdf";
         PdfReader reader = new PdfReader(pdf_url);
-        int nbpage = reader.getNumberOfPages();
+        
+        System.out.println("lecteur.Interface.ReadPDF()");
+        String txt = "C:\\Users\\Super_t0t0\\Documents\\GitHub\\ReaderPDF\\ressources\\test.pdf";
+        
+        
+
+        
+        //Découpage du pdf avec des rectangles qui recupèrent les 2 colonnes.
+        //TODO
+        //Rectangle(int x, int y, int width, int height)
+        PdfRectangle rect = new PdfRectangle(198, 50, 304, 730); 
+        //RenderFilter filter = new RegionTextRenderFilter(rect);
+        PdfReaderContentParser parser = new PdfReaderContentParser(reader);
+        TextExtractionStrategy strategy;
+            for (int i = 1; i <= reader.getNumberOfPages(); i++) {
+            //strategy = new FilteredTextRenderListener(new LocationTextExtractionStrategy(), filter);
+            //strategy = parser.processContent(i, new LocationTextExtractionStrategy());
+            //System.out.println(strategy.getResultantText());
+            //String str1 = PdfTextExtractor.getTextFromPage(reader, i, strategy);
+            PdfDictionary pagedict = reader.getPageN(i);
+            pagedict.put(PdfName.CROPBOX, rect);
+            //System.out.println("STR1 === " + pagedict.);
+            }
+            PdfStamper stamper = new PdfStamper(reader, new FileOutputStream(txt));
+
+            stamper.close();
+            
+            
+            
+            System.out.println("CLOSE####");
+            System.out.println(txt);
+            
+            txt = "C:\\Users\\Super_t0t0\\Documents\\GitHub\\ReaderPDF\\ressources\\test.pdf";
+             
+            PdfReader reader1 = new PdfReader(txt);
+            //System.out.println("URL == " + reader1.toString());
+            //out.flush();
+            //out.close();
+            int nbpage = reader1.getNumberOfPages();
         System.out.println("Nombre de page = " + nbpage);
         //Recherche page BILAN - ACTIF
         //Recherche page BILAN - PASSIF
         //Recherche page 
         //pour chaque page, lire ligne.
-        for(int i=22;i<=22;i++) {
-        //for(int i=1;i<=nbpage;i++) {
-            String str2=PdfTextExtractor.getTextFromPage(reader, i);
-            //System.out.println("STR2 = " + str2);
+        //for(int i=22;i<=22;i++) {
+        for(int i=1;i<=nbpage;i++) {
+            
+            String str2=PdfTextExtractor.getTextFromPage(reader1, i);
+            System.out.println("STR2 = " + str2);
+            
             //System.out.println("===========================");
             
             row = null;
@@ -222,7 +289,7 @@ public class Interface extends javax.swing.JFrame {
             String pattern1 = "[A-Z]{2}";
             String pattern = "[A-Z]{2}\\p{Space}+\\d+\\p{Space}?\\d+";
             for (int j = 0; j < row.length; j++) {
-                System.out.println("\nLigne à traiter AVANT FCT: " + row[j]);
+                //System.out.println("\nLigne à traiter AVANT FCT: " + row[j]);
                 //TAB_BILAN par ligne
                 tabRubriqueBilan = recherchebilan(row[j], pattern);
                 for (int k = 0; k < tabRubriqueBilan.size(); k++) {
@@ -231,7 +298,7 @@ public class Interface extends javax.swing.JFrame {
             }
             
             for (int j = 0; j < tabRubriqueBilanTotal.size(); j++) {
-                tabRubriqueBilanTotal.get(j).show();
+                //tabRubriqueBilanTotal.get(j).show();
             }
             
             System.out.println("TAILLE TAB PAR PAGE = " + tabRubriqueBilanTotal.size());       
@@ -270,7 +337,7 @@ public class Interface extends javax.swing.JFrame {
             //Créatoin d'un nouveau bilan
             bil = new Bilan();
             resultat = ligne.substring(m.start(), m.end());
-            System.out.println(resultat);
+            //System.out.println(resultat);
             
             //Get rubrique du resultat
             rubrique = getRubriqueRegex(resultat);
