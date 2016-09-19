@@ -10,14 +10,10 @@ import com.itextpdf.text.Document;
 import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.Paragraph;
 import com.itextpdf.text.Rectangle;
-import com.itextpdf.text.pdf.PdfArray;
-import com.itextpdf.text.pdf.PdfDictionary;
-import com.itextpdf.text.pdf.PdfName;
 import com.itextpdf.text.pdf.PdfReader;
 import com.itextpdf.text.pdf.PdfStamper;
 import com.itextpdf.text.pdf.PdfWriter;
 import com.itextpdf.text.pdf.parser.PdfTextExtractor;
-import java.io.File;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -27,10 +23,6 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import com.itextpdf.text.pdf.pdfcleanup.PdfCleanUpLocation;
 import com.itextpdf.text.pdf.pdfcleanup.PdfCleanUpProcessor;
  
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -45,27 +37,11 @@ import java.util.List;
  */
 public class Interface extends javax.swing.JFrame {
 
-    private static void veriftabbilan(ArrayList<Bilan> tab) {
-        //Verifier si la la 2nd rubrique est égale à la première
-        //Si c'est la cas, la deuxième = 0
-        Bilan bil1;
-        Bilan bil2;
-        
-        if(tab.size() == 2) {
-            bil1 = tab.get(0);
-            bil2 = tab.get(1);
-            
-            if(bil1.getValeur() == bil2.getValeur()) {
-                tab.get(1).setValeur(0);
-            }
-        }
-    }
-
     /**
      * Creates new form Interface
      */
     
-    private DocPDF doc;
+    private final DocPDF doc;
     
     public Interface() {
         initComponents();
@@ -176,9 +152,7 @@ public class Interface extends javax.swing.JFrame {
         try {
             //this.doc.show();
             text = ReadPDF(this.doc.getChemin());
-        } catch (IOException ex) {
-            Logger.getLogger(Interface.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (DocumentException ex) {
+        } catch (IOException | DocumentException ex) {
             Logger.getLogger(Interface.class.getName()).log(Level.SEVERE, null, ex);
         }
 
@@ -208,99 +182,113 @@ public class Interface extends javax.swing.JFrame {
     
     private static String ReadPDF(String pdf_url) throws IOException, DocumentException
     {
-        
-        ArrayList<Bilan> tabRubriqueBilanTotal = new ArrayList<>();
-        ArrayList<Bilan> tabRubriqueBilan = null;
-        System.out.println("ReadPDF");
+        ArrayList<Rubrique> tabRubriqueBilanTotal = new ArrayList<>();
+        Rubrique rubrique;
+        StringBuilder str = new StringBuilder();
 
-        StringBuilder str=new StringBuilder();
-        
-        try
-        {
         pdf_url = "C:\\Users\\Super_t0t0\\Documents\\GitHub\\ReaderPDF\\ressources\\sample-6.pdf";
-        PdfReader reader = new PdfReader(pdf_url);
-               
-        System.out.println("lecteur.Interface.ReadPDF()");
-        String txt = "C:\\Users\\Super_t0t0\\Documents\\GitHub\\ReaderPDF\\ressources\\sample-999.pdf";
-        
-        File file = new File(txt);
-        file.getParentFile().mkdirs();
-        PdfStamper stamper = new PdfStamper(reader, new FileOutputStream(txt));
+        PdfReader original_reader = new PdfReader(pdf_url);
+
         //OK pour la découpe du pdf
-        for (int page = 1; page <= reader.getNumberOfPages(); page++) {
-            List<PdfCleanUpLocation> cleanUpLocations = new ArrayList<PdfCleanUpLocation>();
-            //Variabiliser les tailles des rectangles et se baser dessus
-            //TODO
-            //Taille rectangle souahité : 
-            //Rectangle(int x, int y, int width, int height)
-            //PdfRectangle rect = new PdfRectangle(198, 50, 304, 730);
-
-            //cleanUpLocations.add(new PdfCleanUpLocation(1, new Rectangle(0, 50, 730, 730), BaseColor.GRAY));
-            cleanUpLocations.add(new PdfCleanUpLocation(page, new Rectangle(0, 0, reader.getPageSize(1).getRight(), 50), BaseColor.GRAY));
-            cleanUpLocations.add(new PdfCleanUpLocation(page, new Rectangle(0, 0, 198, reader.getPageSize(1).getTop()), BaseColor.BLUE));
-            cleanUpLocations.add(new PdfCleanUpLocation(page, new Rectangle(304, 0, reader.getPageSize(1).getRight(), reader.getPageSize(1).getTop()), BaseColor.YELLOW));
-            cleanUpLocations.add(new PdfCleanUpLocation(page, new Rectangle(0, 730, reader.getPageSize(1).getRight(), reader.getPageSize(1).getTop()-50+730), BaseColor.CYAN));
-
-            PdfCleanUpProcessor cleaner = new PdfCleanUpProcessor(cleanUpLocations, stamper);
-            cleaner.cleanUp();
-            stamper.close();
-        }
-        reader.close();
-        System.out.println("FIN CREATION DOC CLOSE####");
-        System.out.println("DEBUT DE LA LECTURE####");
-       
-        pdf_url = "C:\\Users\\Super_t0t0\\Documents\\GitHub\\ReaderPDF\\ressources\\sample-999.pdf";             
-        PdfReader reader1 = new PdfReader(pdf_url);
-        
-        //Patterns de recherche des résultats pour les bilans
-        // 2 Caractères puis chiffres ou non
-        //A peaufiner
         //TODO
-        String pattern_vide = "[A-Z]{2}";
-        String pattern_double = "[A-Z]{2} +[0-9]* [0-9]+";
-        List<String>patterns = new ArrayList();
+        //FAIRE UNE DECOUPE SPE PAR TYPE DE PAGE
+        // FAIRE TEST JE PENSE
+        // UNE FOIS FINI
+        //CLOSE PDF
+        for (int page = 1; page <= original_reader.getNumberOfPages(); page++) {
+            List<Rectangle> rectangles = new ArrayList<>();
+            Rectangle rect1 = new Rectangle(200, 50, 300, 730);
+            Rectangle rect2 = new Rectangle(305, 35, 405, 715);
+            Rectangle rect3 = new Rectangle(485, 30, 590, 46);
+            rectangles.add(rect1);
+            rectangles.add(rect2);
+            rectangles.add(rect3);
+            
+            
+            
+            for (int numrect = 0; numrect < rectangles.size(); numrect++) {
+                PdfReader reader = new PdfReader(original_reader);
+                System.out.println("TRAITEMENT POUR RECTANGLE=" + numrect);
+                String txt = "C:\\Users\\Super_t0t0\\Documents\\GitHub\\ReaderPDF\\ressources\\sample-" + page + numrect + ".pdf";
+                File file = new File(txt);
+                file.getParentFile().mkdirs();
+                //POSE PB
+                //com.itextpdf.text.DocumentException: The original document was reused. Read it again from file.
+                PdfStamper stamper = new PdfStamper(reader, new FileOutputStream(txt));
+                Rectangle rect = rectangles.get(numrect);
 
-        patterns.add(pattern_vide);
-        patterns.add(pattern_double);
+                List<PdfCleanUpLocation> cleanUpLocations = new ArrayList<>();
 
-        //Recherche page BILAN - ACTIF
-        //Recherche page BILAN - PASSIF
-        //Recherche page 
-        //pour chaque page, lire ligne.
-        //for(int i=22;i<=22;i++) {
-        for(int i=1;i<=reader1.getNumberOfPages();i++) {
-            
-                        
-            String text_extract=PdfTextExtractor.getTextFromPage(reader1, i);
-            System.out.println("EXTRACT PDF = \n" + text_extract);
-            
-            //Appel fonction split chaque ligne du text extrait.
-            String [] lignes = splitPage(text_extract);
-            System.out.println("FIN EXTRACT PDF ###");
-            System.out.println("NB DE LIGNE A TRAITER = " + lignes.length);
-            
-            for (String ligne : lignes) {
-                //TAB_BILAN par ligne
-                //Maybe par pattern 
-                //Passe deux fois donc mauvais, il faut exclure les cas déja
-                //passés par un pattern
                 //TODO
-                tabRubriqueBilan = recherchebilan(ligne, patterns);
-                for (int k = 0; k < tabRubriqueBilan.size(); k++) {
-                    tabRubriqueBilanTotal.add(tabRubriqueBilan.get(k));
+                //Faire une liste de rect par page afin que ca soit auto
+                //Rectangle(int x, int y, int width, int height)
+                //NE PAS SUPPR Rectangle rect = new Rectangle(200, 50, 300, 730);
+                //NE PAS SUPPR Rectangle rect = new Rectangle(305, 35, 405, 715);
+                //Rectangle rect = new Rectangle(485, 30, 590, 46);
+                //System.out.println("BOTTOM=" + rect.getBottom());
+                //System.out.println("TOP=" + rect.getTop());
+                //System.out.println("LEFT=" + rect.getLeft());
+                //System.out.println("RIGHT=" + rect.getRight());
+                
+                //PROCEDURE DECOUPE
+
+                cleanUpLocations.add(new PdfCleanUpLocation(page, new Rectangle(0, 0, reader.getPageSize(1).getRight(), rect.getBottom()), BaseColor.GRAY));
+                cleanUpLocations.add(new PdfCleanUpLocation(page, new Rectangle(0, 0, rect.getLeft(), reader.getPageSize(1).getTop()), BaseColor.BLUE));
+                cleanUpLocations.add(new PdfCleanUpLocation(page, new Rectangle(rect.getRight(), 0, reader.getPageSize(1).getRight(), reader.getPageSize(1).getTop()), BaseColor.YELLOW));
+                cleanUpLocations.add(new PdfCleanUpLocation(page, new Rectangle(0, rect.getTop(), reader.getPageSize(1).getRight(), reader.getPageSize(1).getTop()-50+730), BaseColor.CYAN));
+
+                PdfCleanUpProcessor cleaner = new PdfCleanUpProcessor(cleanUpLocations, stamper);
+                cleaner.cleanUp();
+                stamper.close();
+                reader.close();
+
+                System.out.println("FIN CREATION DOC####");
+                System.out.println("DEBUT DE LA LECTURE####");
+
+                String pdf_url_temp = "C:\\Users\\Super_t0t0\\Documents\\GitHub\\ReaderPDF\\ressources\\sample-" + page + numrect + ".pdf";             
+                PdfReader reader1 = new PdfReader(pdf_url_temp);
+
+                //Patterns de recherche des résultats pour les bilans
+                String pattern_vide = "[0-9][A-Z]|[A-Z]{2}";
+                String pattern_double = "[A-Z]{2} +[0-9]* [0-9]+";
+                String pattern_double_num = "[0-9][A-Z] +[0-9]* [0-9]+";
+                List<String>patterns = new ArrayList();
+
+                patterns.add(pattern_vide);
+                patterns.add(pattern_double);
+                patterns.add(pattern_double_num);
+
+                //Recherche page BILAN - ACTIF
+                //Recherche page BILAN - PASSIF
+                //Recherche page 
+                //pour chaque page, lire ligne.
+                //for(int i=22;i<=22;i++) {
+                for(int j=1;j<=reader1.getNumberOfPages();j++) {          
+                    String text_extract=PdfTextExtractor.getTextFromPage(reader1, j);
+                    //System.out.println("EXTRACT PDF = \n" + text_extract);
+                    //Appel fonction split chaque ligne du text extrait.
+                    String [] lignes = splitPage(text_extract);
+                    System.out.println("FIN EXTRACT PDF ###");
+                    System.out.println("NB DE LIGNE A TRAITER = " + lignes.length);
+
+                    for (String ligne : lignes) {
+                        // EXTACT DES RUBRIQUE PAR VALEUR + TEXT
+                        rubrique = recherchebilan(ligne, patterns);
+                        if (rubrique.getNom() != null)
+                            tabRubriqueBilanTotal.add(rubrique);
+                        else
+                            System.err.println("UNE RUBRIQUE NON TROUVEE");
+                    }
+                    System.out.println("NB RUBRIQUE TOTALE POUR RECTANGLE N°" + numrect + " = " + tabRubriqueBilanTotal.size());       
                 }
+                System.out.println("CLOSE PDF TEMP");
+                reader1.close();
             }
-            
-            for (int j = 0; j < tabRubriqueBilanTotal.size(); j++) {
-                //tabRubriqueBilanTotal.get(j).show();
-            }
-            System.out.println("TAILLE TAB PAR RECTANGLE = " + tabRubriqueBilanTotal.size());       
         }
-        //afficheResultat(tabRubriqueBilanTotal);
-        reader1.close();
+        System.out.println("CLOSE PDF");
+        original_reader.close();
         
-        }catch(IOException | DocumentException err) {
-        }
+        
         return String.format("%s", str);
     }
     
@@ -313,59 +301,48 @@ public class Interface extends javax.swing.JFrame {
         return row;
     }
 
-    private static ArrayList<Bilan> recherchebilan(String ligne, List<String> patterns) {  
+    private static Rubrique recherchebilan(String ligne, List<String> patterns) {  
         
-        ArrayList<Bilan> tab = new ArrayList<>();
-        Bilan bil;
-        String resultat;
-        String rubrique;
-        Integer valeur;      
+        Rubrique bil = new Rubrique();
+        String resultat;  
         
-        for (int i = 0; i < patterns.size(); i++) {
-            
+        for (int i = 0; i < patterns.size(); i++) {            
             Pattern p = Pattern.compile(patterns.get(i));
             Matcher m = p.matcher(ligne);
-            while (m.find()) {                    
-                //Créatoin d'un nouveau bilan
-                bil = new Bilan();
+            if (m.find()) {
+                //Créatoin d'une nouvelle rubrique
                 resultat = ligne.substring(m.start(), m.end());            
-                //Get rubrique du resultat
-                rubrique = getRubriqueRegex(resultat);
-                //Get valeur du resultat
-                valeur = getValeurRegex(resultat);
+                //SET rubrique du resultat                        
+                bil.setNom(getRubriqueRegex(resultat));
+                    
+                //SET valeur du resultat
+                bil.setValeur(getValeurRegex(ligne));
 
-                bil.setNom(rubrique);
-                bil.setValeur(valeur);
-
-                tab.add(bil);
-            }       
-        
+                break;
+            }
         }
-        veriftabbilan(tab);
-        
-        for (int i = 0; i < tab.size(); i++) {
-            tab.get(i).show();
-        }
-        
-        return tab;
+        //bil.show();
+        return bil;
     }
 
     private static Integer getValeurRegex(String resultat) {
         Integer res;
-        String[] strsplit;
-        String str;
+        String pattern;
         
-        strsplit = resultat.split("[a-zA-Z]+");
-        //test du split si seulement rubrique sur la ligne
-        if (strsplit.length == 0) {
-            res = 0;
+        pattern = " +[0-9]* [0-9]+";
+        
+        Pattern p = Pattern.compile(pattern);
+        Matcher m = p.matcher(resultat);
+        if(m.find()) {
+            String str;
+            str = (resultat.substring(m.start(), m.end()));
+            String replaceAll = str.replaceAll(" ", "");
+            res = Integer.parseInt(replaceAll);
         }
-        
         else {
-            str = strsplit[1].replaceAll(" ", "");
-            res = Integer.parseInt(str);
+            //System.err.println("VALEUR NON TROUVEE");
+            res =0;
         }
-
         return res;
     }
 
@@ -373,18 +350,18 @@ public class Interface extends javax.swing.JFrame {
         String res = null;
         String pattern;
         
-        pattern = "[a-zA-Z]{2}";
+        pattern = "[0-9][A-Z]|[A-Z]{2}";
         
         Pattern p = Pattern.compile(pattern);
         Matcher m = p.matcher(resultat);
 
-        while (m.find()) {
+        if(m.find()) {
             res = (resultat.substring(m.start(), m.end()));
         }
         return res;
     }
 
-    private static void afficheResultat(ArrayList<Bilan> tabRubriqueBilanTotal) {
+    private static void afficheResultat(ArrayList<Rubrique> tabRubriqueBilanTotal) {
         
         for (int i = 0; i < tabRubriqueBilanTotal.size(); i++) {
             
